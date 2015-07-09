@@ -1,0 +1,13 @@
+1. Add Sub class Arm Parser for Dynamixel
+2. Add Sub class Pixhawk Parser for Quadcopter
+3. Add State Machine and GUI Handler
+4. Add GUI
+5. Verify everything with simple tests
+6. Try Position and tracking control
+7. System ID
+8. Do Adaptive MPC :)
+
+
+i. Add more debug and somehow use forwardkin for Arm
+ii. Add service for knowing forward kin
+iii. Test cyton arm

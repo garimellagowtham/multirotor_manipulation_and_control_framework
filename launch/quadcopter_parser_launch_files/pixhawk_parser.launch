@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="pixhawk_parser" pkg="multirotor_manipulation_and_control_framework" type="pixhawk_parser_example" output="screen">
+    <param name="fcu_url" type="string" value="/dev/ttyACM0:115200"/>
+  </node>
+
+</launch>

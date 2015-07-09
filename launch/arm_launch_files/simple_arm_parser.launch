@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<launch>
+	<node name="simple_arm_example" pkg="multirotor_manipulation_and_control_framework" type="simple_arm_example" output="screen"/>
+</launch>
