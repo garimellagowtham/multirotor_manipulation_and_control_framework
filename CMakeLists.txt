@@ -18,10 +18,16 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 ## System dependencies are found with CMake's conventions
+find_package(Qt4 COMPONENTS QtCore QtGui REQUIRED)
+set( QT_USE_QTGUI TRUE )
+set( QT_USE_QTOPENGL TRUE )
+set( QT_USE_QTXML TRUE )
+include(${QT_USE_FILE})
 find_package(Boost REQUIRED COMPONENTS system)
 find_package(Eigen3 REQUIRED)
 find_package(GCOP REQUIRED COMPONENTS systems est)
 find_package(TinyXML REQUIRED)
+find_package(Qwt REQUIRED)
 
 message("TINYXML: ${TINYXML_LIBRARIES}")
 
@@ -32,7 +38,7 @@ include(MavrosMavlink)
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
 ## See http://ros.org/doc/api/catkin/html/user_guide/setup_dot_py.html
-# catkin_python_setup()
+ catkin_python_setup()
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -85,6 +91,12 @@ include(MavrosMavlink)
 #   sensor_msgs#   std_msgs
 # )
 
+## Set Include Dirs for Multirotor Client GUI:
+set(multirotor_client_INCLUDE_DIRS 
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ${QWT_INCLUDE_DIRS}
+   )
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -95,10 +107,10 @@ include(MavrosMavlink)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES multirotor_manipulation_and_control_framework
-#  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
-#  DEPENDS system_lib
+  INCLUDE_DIRS include  ${multirotor_client_INCLUDE_DIRS}
+  LIBRARIES multirotor_manipulation_and_control_framework multirotorclientgui
+  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
+  DEPENDS system_lib
 )
 
 ###########
@@ -107,14 +119,15 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
- include_directories(include)
 include_directories(
+  include
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${GCOP_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
   ${mavlink_INCLUDE_DIRS}
+  ${multirotor_client_INCLUDE_DIRS}
 )
 
 #set(USB2AX ON)
@@ -137,7 +150,19 @@ if(USB2AX)
    ${DXL_HAL_SRC}
  )
 
-target_link_libraries(${PROJECT_NAME} ${GCOP_LIBRARIES} ${TINYXML_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+## Plugin for QT
+  qt4_wrap_cpp(multirotor_client_gui_MOCS src/qt_gui_files/multirotor_client_gui.h)
+  qt4_wrap_ui(multirotor_client_gui_UIS_H src/qt_gui_files/multirotor_client_widget.ui)
+
+  add_library(multirotorclientgui src/qt_gui_files/multirotor_client_gui.cpp ${multirotor_client_gui_MOCS} ${multirotor_client_gui_UIS_H})
+
+## Specify dependencies for the library:
+  target_link_libraries(multirotorclientgui ${catkin_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QWT_LIBRARIES})
+  target_link_libraries(${PROJECT_NAME} ${GCOP_LIBRARIES} ${TINYXML_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+
+## Hide symbols for qt gui
+  find_package(class_loader)
+  class_loader_hide_library_symbols(multirotorclientgui)
 
 ## Declare a cpp executable
  add_executable(simple_arm_example src/arm_examples/simple_arm_example.cpp)

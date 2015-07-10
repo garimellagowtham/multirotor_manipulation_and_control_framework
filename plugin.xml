@@ -1,0 +1,12 @@
+<library path="lib/libmultirotorclientgui">
+  <class name="multirotor_manipulation_and_control_framework/MultirotorClientGui" type="multirotor_manipulation_and_control_framework::MultirotorClientGui" base_class_type="rqt_gui_cpp::Plugin">
+    <description>
+      A GUI for displaying sensor data and sending commands to onboard node
+    </description>
+    <qtgui>
+      <label>multirotor_client</label>
+      <icon type="theme">image-x-generic</icon>
+      <statustip>A GUI for reading onboard data</statustip>
+    </qtgui>
+  </class>
+</library>
