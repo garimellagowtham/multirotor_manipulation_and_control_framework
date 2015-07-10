@@ -14,9 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   geometry_msgs
-  libmavconn
-  mavlink
-
+#PACKAGE_CONFIG#
 )
 
 ## System dependencies are found with CMake's conventions
@@ -32,8 +30,7 @@ find_package(TinyXML REQUIRED)
 find_package(Qwt REQUIRED)
 
 ## Setup Variables for use by binaries etc:
-
-SET(ENABLE_PIXHAWK ON)
+#SETUP_CONFIG#
 
 if(ENABLE_PIXHAWK)
   include(EnableCXX11)
@@ -131,8 +128,7 @@ include_directories(
   ${GCOP_INCLUDE_DIRS}
   ${TINYXML_INCLUDE_DIR}
   ${Boost_INCLUDE_DIRS}
-  ${mavlink_INCLUDE_DIRS}
-
+#INCLUDE_CONFIG#
   ${multirotor_client_INCLUDE_DIRS}
 )
 
@@ -152,8 +148,7 @@ if(USB2AX)
    include/multirotor_manipulation_and_control_framework/simple_arm.cpp
    include/multirotor_manipulation_and_control_framework/generic_arm.cpp
    include/multirotor_manipulation_and_control_framework/dynamixelsdk/dynamixel.C
-   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp
-
+#LIB_CONFIG#
    ${DXL_HAL_SRC}
  )
 

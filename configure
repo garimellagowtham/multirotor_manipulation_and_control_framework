@@ -1,0 +1,66 @@
+#!/bin/bash
+# Script to configure package.xml and CMakeLists.txt
+while [[ $# > 0 ]]
+do
+key="$1"
+
+case $key in
+  -e|--enable)
+  if [ "$2" == "pixhawk" ]  
+  then
+    PACKAGES="$PACKAGES libmavconn mavlink" #Add libraries to package list
+    INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
+    LIB_SRCS="$LIB_SRCS   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp\n" #Add library sources
+    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_PIXHAWK ON)"
+  fi
+  if [ "$2" == "ardrone" ]  
+  then
+    PACKAGES="$PACKAGES ardrone_autonomy" #Add libraries to package list
+    #INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
+    #LIB_SRCS="$LIB_SRCS   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp\n" #Add library sources
+    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_ARDRONE ON)"
+  fi
+  shift # past argument
+  ;;
+ -h|--help)
+  echo
+  echo Creates Package.xml and CMakeLists.txt using the options specified. The options are:
+  echo "      -e|--enable  Enable a package (pixhawk, ardrone, pelican, robai) should be input separately"
+  echo "      -h|--help     Show this help message"
+  echo "Example usage ./configure --enable pixhawk --enable ardrone"
+  echo
+  exit
+  ;;
+esac
+shift # past argument or value
+done
+
+for package in $PACKAGES
+do
+  PACKAGE_LIST="$PACKAGE_LIST  $package\n"
+  BUILD_DEPENDENCIES_STRING="$BUILD_DEPENDENCIES_STRING<build_depend>$package</build_depend>\n  "
+  RUN_DEPENDENCIES_STRING="$RUN_DEPENDENCIES_STRING<run_depend>$package</run_depend>\n  "
+done 
+
+echo $PACKAGE_LIST
+echo $INCLUDES
+echo $LIB_SRCS
+echo $BUILD_DEPENDENCIES_STRING
+echo $RUN_DEPENDENCIES_STRING
+
+# Make Changes to All the files at once:
+cp CMakeLists.txt CMakeLists.txt.bak #Make a backup
+cp CMakeLists.txt.in CMakeLists.txt.temp
+sed "s|#PACKAGE_CONFIG#|$PACKAGE_LIST|" >CMakeLists.txt.temp1 <CMakeLists.txt.temp
+sed "s|#INCLUDE_CONFIG#|$INCLUDES|" >CMakeLists.txt.temp <CMakeLists.txt.temp1
+sed "s|#LIB_CONFIG#|$LIB_SRCS|" >CMakeLists.txt.temp1  <CMakeLists.txt.temp
+sed "s|#SETUP_CONFIG#|$SETUP_VARS|" >CMakeLists.txt.temp  <CMakeLists.txt.temp1
+mv CMakeLists.txt.temp CMakeLists.txt
+rm CMakeLists.txt.temp*
+
+cp package.xml package.xml.bak
+cp package.xml.in package.xml.temp
+sed "s|#BUILD_DEPENDENCIES_CONFIG#|$BUILD_DEPENDENCIES_STRING|" <package.xml.temp >package.xml.temp1
+sed "s|#RUN_DEPENDENCIES_CONFIG#|$RUN_DEPENDENCIES_STRING|" <package.xml.temp1 >package.xml.temp
+mv package.xml.temp package.xml
+rm package.xml.temp*

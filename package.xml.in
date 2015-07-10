@@ -46,9 +46,7 @@
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_msgs</build_depend>
   <build_depend>geometry_msgs</build_depend>
-  <build_depend>libmavconn</build_depend>
-  <build_depend>mavlink</build_depend>
-  
+  #BUILD_DEPENDENCIES_CONFIG#
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
   <run_depend>rqt_gui</run_depend>
@@ -56,9 +54,7 @@
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_msgs</run_depend>
   <run_depend>geometry_msgs</run_depend>
-  <run_depend>libmavconn</run_depend>
-  <run_depend>mavlink</run_depend>
-  
+  #RUN_DEPENDENCIES_CONFIG#
 
 
   <!-- The export tag contains other, unspecified, tags -->
