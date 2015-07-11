@@ -38,6 +38,16 @@ public:
    */
   PixhawkParser(std::string url = "udp://@");
 
+ /**
+  * @brief: Destructor
+  */
+  ~PixhawkParser()
+  {
+    //Close serial:
+    gcs_link->close();
+    gcs_link.reset();//Delete the signal
+  }
+
   bool takeoff();
   bool land();
   bool disarm();

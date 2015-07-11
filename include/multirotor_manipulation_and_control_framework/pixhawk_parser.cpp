@@ -209,6 +209,7 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
 {
   //if (debug_enable_)
     //printf("Received message from serial with ID #%d (sys:%d|comp:%d):\n", message->msgid, message->sysid, message->compid);
+  uint16_t mask;//Mask for triggering callbacks
 
   switch(message->msgid)
   {
@@ -256,6 +257,11 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
     sensor_data_.linacc.x = rawimu_val.xacc;
     sensor_data_.linacc.y = rawimu_val.yacc;
     sensor_data_.linacc.z = rawimu_val.zacc;
+
+    //Trigger signal:
+    mask = 1<<7;
+    signal_sensor_update_(sensor_data, mask);
+
     break;
   case MAVLINK_MSG_ID_SCALED_PRESSURE:
     mavlink_scaled_pressure_t pressuremsg;
@@ -263,6 +269,11 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
     sensor_data_.pressure = pressuremsg.press_abs*0.1;//KPa
     //  ROS_INFO("Data Pressure: %f\t%f\t%f",pressuremsg.press_abs,pressuremsg.press_diff1,pressuremsg.press_diff2);
     sensor_data_.temperature = pressuremsg.temperature*0.01;
+
+    //Trigger signal:
+    mask = 1<<3;
+    signal_sensor_update_(sensor_data, mask);
+
     break;
   case MAVLINK_MSG_ID_ATTITUDE:
     mavlink_attitude_t attitudemsg;
@@ -276,14 +287,21 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
     if(log_enable_)
     {
       //log the data:
-        imu_file_<<common::timeMicroseconds()<<"\t"<<sensor_data_.rpydata.x<<"\t"<<sensor_data_.rpydata.y<<"\t"<<sensor_data_.rpydata.z<<endl;
+      imu_file_<<common::timeMicroseconds()<<"\t"<<sensor_data_.rpydata.x<<"\t"<<sensor_data_.rpydata.y<<"\t"<<sensor_data_.rpydata.z<<endl;
     }
+
+    //Trigger signal:
+    mask = 1<<1;
+    signal_sensor_update_(sensor_data, mask);
+
     break;
   case MAVLINK_MSG_ID_SYS_STATUS:
     mavlink_sys_status_t extended_statusmsg;
     mavlink_msg_sys_status_decode(message,&extended_statusmsg);
     //ROS_INFO("Sys: %d", extended_statusmsg.voltage_battery);
     sensor_data_.battery_volts = ((double)extended_statusmsg.voltage_battery)/1000.0f;//in volts
+
+    //Trigger for this is done in heartbeat since both are in the same group for mask
     break;
   case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
     mavlink_rc_channels_raw_t rcmessage;
@@ -309,6 +327,11 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
       //log the data:
       servo_file_<<common::timeMicroseconds()<<"\t"<<servooutmessage.servo1_raw<<"\t"<<servooutmessage.servo2_raw<<"\t"<<servooutmessage.servo3_raw<<"\t"<<servooutmessage.servo4_raw<<endl;
     }
+
+    //Trigger signal:
+    mask = 1<<6;
+    signal_sensor_update_(sensor_data, mask);
+
     break;
   case MAVLINK_MSG_ID_HEARTBEAT:
     //#TODO: Add if quadcopter does not send heart beat for few seconds
@@ -391,6 +414,11 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
       sensor_data_.armed = false;
       sensor_data_.quadstate += " DISARMED";
     }
+
+    //Trigger signal:
+    mask = 1;
+    signal_sensor_update_(sensor_data, mask);
+
     break;
   case MAVLINK_MSG_ID_STATUSTEXT:
     mavlink_statustext_t statusmsg;

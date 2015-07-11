@@ -28,6 +28,8 @@
 #include <std_msgs/Bool.h>
 #include <std_msgs/String.h>
 
+#include <boost/signal.hpp>
+
 using namespace std;
 
 /**
@@ -46,6 +48,22 @@ public:
     double command_rate_yaw;///< Commanded yaw in radians
     double command_thrust;///< Commanded thrust between 0 and command_max_thrust
   };
+  /**
+    * @brief Sensor data obtained from Quadcopter
+    *  As the data is received a trigger in terms of boost signal is triggered
+    *  To know what part of data is received, look at the mask in the triggered function:
+    *  The mask is created with each bit representing different data types
+    *  mask[0]: battery_volts, quadstate, timestamp, armed
+    *  mask[1]: rpydata
+    *  mask[2]: magdata
+    *  mask[3]: pressure, temperature, altitude
+    *  mask[4]: wind_speed, wind_angle
+    *  mask[6]: motorpwm
+    *  mask[7]: linvel, linacc
+    *  mask[8]: gps_raw
+    *
+    *  Only the bits which are updated in the signal are set to 1
+    */
   struct SensorData{
     double battery_volts;///< Battery volts in V
     std::string quadstate;///< Information about quadcopter state (Flying, Landed etc) in Human readable format
@@ -59,6 +77,7 @@ public:
     double motorpwm[8];///< motorpwm values not all of them may be used
     geometry_msgs::Vector3 linvel;///< Linear velocity of quadcopter
     geometry_msgs::Vector3 linacc;///< Linear acceleration of quadcopter
+    long gps_raw[3];///< GPS Position in Latitude, Longitude and Altitude
     double timestamp;///< timestamp from drone
     bool armed;///< Whether the quadcopter is ready to fly or not
     SensorData(): battery_volts(0)
@@ -79,13 +98,15 @@ public:
   double mass;///< Mass of the Quadcopter
   geometry_msgs::Vector3 body_dimensions;///< body dimensions of quadcopter along principal axis assuming its a box
   bool open_error;///< Error while opening the hardware
+  const SensorData &sensor_data;///< Sensor data for reading purposes only Cannot write to it
+  boost::signal<void (const SensorData &, uint16_t mask)> signal_sensor_update_;///< sensor data updated signal can be used to trigger callbacks etc
 
 public: 
   /**
   * @brief Constructor
   *
   */
-  QuadcopterParser():log_enable_(false), mass(1.0), open_error(false){
+  QuadcopterParser():log_enable_(false), mass(1.0), open_error(false), sensor_data(sensor_data_){
     body_dimensions.x = 1.0;//Default values for body dimensions
     body_dimensions.y = 1.0;
     body_dimensions.z = 1.0;
@@ -129,14 +150,6 @@ public:
   * @return  Success/Failure
   */
   virtual bool command(const ControlCommand &command)=0;
-  /**
-  * @brief Get sensor data available from the Quadcopter
-  *
-  * @param data Sensor data (see struct for more info)
-  *
-  * @return true if new data is available
-  */
-  virtual bool getSensorData(SensorData &data)=0;
 
   /**
   * @brief Virtual Destructor
