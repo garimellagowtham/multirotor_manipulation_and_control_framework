@@ -4,7 +4,6 @@ using namespace std;
 
 GenericArm::GenericArm(ros::NodeHandle &nh, int njoints): ArmParser()
                                                                 , number_of_joints_(njoints)
-                                                                , new_state_received_(false)
                                                                 , so3(gcop::SO3::Instance())
 {
 
@@ -18,9 +17,9 @@ GenericArm::GenericArm(ros::NodeHandle &nh, int njoints): ArmParser()
 
   joint_sub_ = nh.subscribe("/joint_states",1, &GenericArm::stateReceived, this);
 
-  //Resize sensor msgs Joint State:
-  received_msg_.position.resize(number_of_joints_, 0);
-  received_msg_.velocity.resize(number_of_joints_, 0);
+  //Resize the feedback msg size:
+  sensor_data_.joint_angles_.resize(number_of_joints_,0);
+  sensor_data_.joint_velocities_.resize(number_of_joints_,0);
 }
 
 bool GenericArm::setAngles(const vector<double> &joint_angles, const vector<double> *joint_velocities)
@@ -98,26 +97,6 @@ bool GenericArm::powerMotors(bool state)
   return true;
 }
 
-bool GenericArm::getState(vector<double> &joint_angles, vector<double> *joint_velocities)
-{
-  if(!new_state_received_)
-    return false;
-
-  //Copy Angles
-  joint_angles = received_msg_.position;
-
-  //Copy Velocities
-  if(joint_velocities)
-  {
-    (*joint_velocities) = received_msg_.velocity;
-  }
-
-  //Set received to false
-  new_state_received_ = false;
-
-  return true;
-}
-
 void GenericArm::enableLog(string log_directory)
 {
   feedback_log_file_.open((log_directory+"/arm_feedback.dat").c_str());
@@ -152,8 +131,12 @@ void GenericArm::stateReceived(const sensor_msgs::JointState::ConstPtr &joint_st
 {
   assert(number_of_joints_ == joint_state->position.size());//Check number of joints
 
-  new_state_received_ = true;//Set flag for copy
-  received_msg_ = *joint_state;//Copy the message
+  //Copy the joint angles and velocities data:
+  sensor_data_.joint_angles_ = joint_state->position;
+  sensor_data_.joint_velocities_ = joint_state->velocity;
+
+  //Signal
+  signal_feedback_received_(sensor_data);//Signal the callback functions
 
   //Log Data
   if(log_enable_)

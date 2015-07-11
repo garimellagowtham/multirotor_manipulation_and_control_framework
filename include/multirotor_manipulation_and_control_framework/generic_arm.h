@@ -57,21 +57,18 @@ public:
   virtual bool setAngles(const vector<double> &joint_angles, const vector<double> *joint_velocities = 0);
   virtual bool setEndEffectorPose(const Eigen::Matrix4d &end_effector_pose);
   virtual bool powerMotors(bool state);
-  virtual bool getState(vector<double> &joint_angles, vector<double> *joint_velocities=0);
   virtual void enableLog(string log_directory);
   virtual bool grip(double value);
 
 
 protected:
-  ros::Publisher joint_pub_;
-  ros::Publisher gripper_pub_;
-  ros::Publisher end_effector_pub_;
-  ros::Publisher power_motors_pub_;
-  ros::Subscriber joint_sub_;
-  bool new_state_received_;
-  sensor_msgs::JointState received_msg_;
-  int number_of_joints_;
-  gcop::SO3 &so3;
+  ros::Publisher joint_pub_;///< Desired Joint angle publisher
+  ros::Publisher gripper_pub_;///< Commanded gripper position publisher
+  ros::Publisher end_effector_pub_;///< Commanded end effector pose publisher
+  ros::Publisher power_motors_pub_;///< Power motors on/off publisher
+  ros::Subscriber joint_sub_;///< Joint feedback subscriber
+  int number_of_joints_;///< Number of joints in the arm
+  gcop::SO3 &so3;///< Instance of so3 to perform operations on rotation matrices
 
 protected:
   /**

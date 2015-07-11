@@ -2,7 +2,9 @@
 
 using namespace std;
 
-SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser(), se3(gcop::SE3::Instance())
+SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser()
+                                                        , se3(gcop::SE3::Instance())
+                                                        , thread_close(false)
 {
   arm_id_[0] = 1; arm_id_[1] = 2;//Set IDs
   arm_min_angles_[0] = 937; arm_min_angles_[1] = 0;//Set Min Angles
@@ -10,7 +12,7 @@ SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser(), se3(gcop::
   arm_offset_angles_[0] = 1144; arm_offset_angles_[1] = 2047; //Set Default angles (2167 - 180degrees)
   arm_default_velocities_[0] = 52; arm_default_velocities_[1] = 52;//Set default velocity of the arm
   arm_max_angle_velocities_[0] = 176; arm_max_angle_velocities_[1] = 176; //Max angular velocity (unit: 0.114 rpm)
-  l1 = 0.175; l2 = 0.42; x1 = 0.025;
+  l1 = 0.175; l2 = 0.42; x1 = 0.025;//Physical lengths of the arm used for inverse kinematics
 
   //Open the communication to arm:
   uint16_t baudnum = 2000000 / (baudrate + 1);
@@ -32,14 +34,50 @@ SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser(), se3(gcop::
     return;
   }
 
+  //Initialize arm feedback data
+  sensor_data_.joint_angles_.resize(NOFJOINTS);
+  sensor_data_.joint_velocities_.resize(NOFJOINTS);
+
+  //Create a thread to receive feedback from arm at 20Hz:
+  receive_thread_ = boost::thread(boost::bind(&SimpleArm::serialReceiveThread, this));
+
   //Set Default Joint Angles and Velocities:
   {
     std::vector<double> joint_angles(NOFJOINTS);
     std::vector<double> joint_velocities(NOFJOINTS);
     joint_angles[0] = M_PI/2; joint_angles[1] = -M_PI;//rad
     joint_velocities[0] = 0.621; joint_velocities[1] = 0.621;//rad/s
+    //joint_velocities[0] = 0.321; joint_velocities[1] = 0.321;//rad/s
     setAngles(joint_angles, &joint_velocities);
+
+    //Wait till the joint angles are achieved:
+    {
+      unsigned long count = 0;
+      while(count < 100)//100 x 100 ms =  10s
+      {
+        bool result = true;
+        {
+          boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
+          for(int count = 0; count < NOFJOINTS; count++)
+          {
+            //cout<<"Joint ["<<count<<"]: "<<sensor_data.joint_angles_[count]<<"\t"<<sensor_data.joint_velocities_[count]<<endl;
+            if(abs(sensor_data.joint_angles_[count] - joint_angles[count]) > 4.0*(M_PI/180.0)) //error of 4 degrees
+            {
+              result = false;
+              break;
+            }
+          }
+        }
+
+        if(result == true)
+          break;
+        usleep(100000);//Sleep microseconds
+        //cout<<count<<endl;
+        count++;
+      }
+    }
   }
+
 }
 
 bool SimpleArm::setAngles(const vector<double> &joint_angles, const vector<double> *joint_velocities)
@@ -47,6 +85,7 @@ bool SimpleArm::setAngles(const vector<double> &joint_angles, const vector<doubl
   if(log_enable_)
     command_log_file_<<common::timeMicroseconds()<<"\t";
 
+  boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
   for(int count_joints = 0; count_joints < NOFJOINTS; count_joints++)
   {
     //Command Angle:
@@ -101,6 +140,7 @@ bool SimpleArm::setEndEffectorPose(const Eigen::Matrix4d &end_effector_pose)
 bool SimpleArm::powerMotors(bool state)
 {
   int power_motors = state?1:0;
+  boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
   for(int count_joints = 0;count_joints < NOFJOINTS; count_joints++)
   {
     dxl_write_byte( arm_id_[count_joints], P_TORQUE_ENABLE, power_motors);
@@ -116,68 +156,6 @@ bool SimpleArm::powerMotors(bool state)
       PrintCommStatus(CommStatus);
       return false;//Cannot power the motor
     }
-  }
-  return true;
-}
-
-bool SimpleArm::getState(vector<double> &joint_angles, vector<double> *joint_velocities)
-{
-  //Find the current motor position and velocities
-  uint16_t present_pos, present_vel;//Temp variables
-  int CommStatus;
-  if(log_enable_)
-  {
-    feedback_log_file_<<common::timeMicroseconds()<<"\t";
-  }
-  for(int count_joints = 0; count_joints < NOFJOINTS; count_joints++)
-  {
-    present_pos = dynamixelsdk::dxl_read_word( arm_id_[count_joints], P_PRESENT_POSITION_L );
-    CommStatus = dynamixelsdk::dxl_get_result();
-
-    if( CommStatus == COMM_RXSUCCESS )
-    {
-      joint_angles[count_joints] = double(arm_offset_angles_[count_joints] - present_pos)*((M_PI*ANGRES)/180.0);
-      common::map_angle(joint_angles[count_joints]);
-      if(log_enable_)
-      {
-        feedback_log_file_<<joint_angles[count_joints]<<"\t";
-      }
-      //[DEBUG]
-      std::cout<<"Current Position ID["<<arm_id_[count_joints]<<"] :"<<joint_angles[count_joints]<<std::endl;
-    }
-    else
-    {
-      //[DEBUG]
-      PrintCommStatus(CommStatus);
-      return false;
-    }
-    /////Velocity Reading:
-    if(joint_velocities != 0)
-    {
-      present_vel = dynamixelsdk::dxl_read_word( arm_id_[count_joints], P_PRESENT_SPEED_L );
-      CommStatus = dynamixelsdk::dxl_get_result();
-
-      if( CommStatus == COMM_RXSUCCESS )
-      {
-        (*joint_velocities)[count_joints] = present_vel*ANGVELRES;
-        if(log_enable_)
-        {
-          feedback_log_file_<<(*joint_velocities)[count_joints]<<"\t";
-        }
-        //[DEBUG]
-        std::cout<<"Current Velocity ID["<<arm_id_[count_joints]<<"] :"<<(*joint_velocities)[count_joints]<<std::endl;
-      }
-      else
-      {
-        //[DEBUG]
-        PrintCommStatus(CommStatus);
-        return false;
-      }
-    }
-  }
-  if(log_enable_)
-  {
-    feedback_log_file_<<endl;
   }
   return true;
 }
@@ -269,4 +247,91 @@ double SimpleArm::inverseKinematics(const Eigen::Matrix4d &end_effector_pose, ve
     }
   }
   return C;
+}
+
+void SimpleArm::serialReceiveThread()
+{
+  //In this thread keep receiving serial data and sleep for some time (20Hz = 50 ms)
+  while(!thread_close)
+  {
+    //Log time
+    if(log_enable_)
+    {
+      feedback_log_file_<<common::timeMicroseconds()<<"\t";
+    }
+
+    //Find the current motor position and velocities
+    {
+      uint16_t present_pos, present_vel;//Temp variables
+      int CommStatus;
+      boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
+      for(int count_joints = 0; count_joints < NOFJOINTS; count_joints++)
+      {
+        present_pos = dynamixelsdk::dxl_read_word( arm_id_[count_joints], P_PRESENT_POSITION_L );
+        CommStatus = dynamixelsdk::dxl_get_result();
+
+        if( CommStatus == COMM_RXSUCCESS )
+        {
+          sensor_data_.joint_angles_[count_joints] = (double(present_pos) - double(arm_offset_angles_[count_joints]))*((M_PI*ANGRES)/180.0);
+          common::map_angle(sensor_data_.joint_angles_[count_joints]);
+          if(log_enable_)
+          {
+            feedback_log_file_<<sensor_data_.joint_angles_[count_joints]<<"\t";
+          }
+          //[DEBUG]
+          //std::cout<<"Current Position ID["<<arm_id_[count_joints]<<"] :"<<sensor_data_.joint_angles_[count_joints]<<std::endl;
+        }
+        else
+        {
+          //[DEBUG]
+          PrintCommStatus(CommStatus);
+          //#TODO: Check number of errors and print in sensor status or close the thread
+          return;
+        }
+
+        /////Velocity Reading:
+        present_vel = dynamixelsdk::dxl_read_word( arm_id_[count_joints], P_PRESENT_SPEED_L );
+        CommStatus = dynamixelsdk::dxl_get_result();
+
+        if( CommStatus == COMM_RXSUCCESS )
+        {
+          int actual_vel = 0;
+
+          //Find the direction of motor:
+          if(present_vel <= 1023)
+          {
+            actual_vel = present_vel;
+          }
+          else
+          {
+            actual_vel = -(present_vel - 1024);
+          }
+
+          //Set Joint Velocities
+          sensor_data_.joint_velocities_[count_joints] = actual_vel*ANGVELRES;
+          if(log_enable_)
+          {
+            feedback_log_file_<<sensor_data_.joint_velocities_[count_joints]<<"\t";
+          }
+          //[DEBUG]
+          //std::cout<<"Current Velocity ID["<<arm_id_[count_joints]<<"] :"<<sensor_data.joint_velocities_[count_joints]<<std::endl;
+        }
+        else
+        {
+          //[DEBUG]
+          PrintCommStatus(CommStatus);
+          return;
+        }
+      }
+      if(log_enable_)
+      {
+        feedback_log_file_<<endl;
+      }
+    }
+
+    // Signal that data is updated
+    signal_feedback_received_(sensor_data);//Call signal with the updated feedback data
+
+    usleep(50000);//sleep for microseconds
+  }
 }

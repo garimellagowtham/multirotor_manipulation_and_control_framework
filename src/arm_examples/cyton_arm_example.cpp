@@ -5,6 +5,18 @@
 using namespace std;
 
 boost::shared_ptr<ArmParser> arm_instance_;
+void armFeedback(const ArmParser::ArmSensorData &sensor_data)
+{
+  static ros::Time t1 = ros::Time::now();
+  ros::Time t2 = ros::Time::now();
+  ROS_INFO("Time diff: %f",(t2 - t1).toSec());
+  //Print the joint angles and velocities
+  for(int count = 0; count < 8; count++)
+  {
+    cout<<"J["<<count<<"]: "<<sensor_data.joint_angles_[count]<<"\t"<<sensor_data.joint_velocities_[count]<<endl;
+  }
+  t1 = t2;
+}
 
 int main(int argc, char **argv)
 {

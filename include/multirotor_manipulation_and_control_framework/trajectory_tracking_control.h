@@ -63,6 +63,7 @@ protected:
   gcop::SO3 &so3;///< SE3 Instance
   const double bound_velocity_difference_;///< Bound on the velocity difference in the controller in m/s
   bool integrator_enable_;///< Integrator enable
+  QuadcopterParser &parser_;///< Const reference to parser for sending commands to quadcopter
 
 private:
   /**
@@ -88,8 +89,9 @@ private:
 public:
   /**
   * @brief Constructor
+  * @param parser   Reference of a quadcopter parser is needed to send quadcopter commands
   */
-  TrajectoryTrackingController();
+  TrajectoryTrackingController(QuadcopterParser &parser);
   /**
   * @brief Set the rc override command
   *
@@ -98,7 +100,7 @@ public:
   *
   * @return  False if input state has bad values
   */
-  bool setCtrl(QuadcopterParser::ControlCommand &result_command, const gcop::Body3dState &filtered_state);
+  virtual bool setCtrl(const gcop::Body3dState &filtered_state);
   /**
   * @brief Sets the gains for the controller after some prechecks
   *

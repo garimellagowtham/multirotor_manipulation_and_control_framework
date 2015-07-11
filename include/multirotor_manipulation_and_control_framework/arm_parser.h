@@ -23,6 +23,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include "utils.h"
+#include <boost/signal.hpp>
 
 using namespace std;
 
@@ -32,7 +33,25 @@ using namespace std;
 */
 class ArmParser{
 public:
-  ArmParser(): log_enable_(false)
+  /**
+    * @brief Stores arm data. Add more entities like voltage etc later
+    */
+  struct ArmSensorData{
+    std::vector<double> joint_angles_;///< Feedback Joint Angles
+    std::vector<double> joint_velocities_;///< Feedback Joint Velocities
+  };
+public:
+  const ArmSensorData &sensor_data;///< Arm feedback data for reading
+  boost::signal<void (const ArmSensorData&)> signal_feedback_received_;///< Signal that arm feedback has been updated
+public:
+  ArmParser(): log_enable_(false), sensor_data(sensor_data_)
+  {
+  }
+
+  /**
+    * @brief Virtual Destructor
+    */
+  virtual ~ArmParser()
   {
   }
   /**
@@ -60,15 +79,7 @@ public:
   * @return  true if successful
   */
   virtual bool powerMotors(bool state)=0;
-  /**
-  * @brief Get the State of Arm Joint Angles and velocities
-  *
-  * @param joint_angles       Vector of joint angles which will be resized and filled with joint angles
-  * @param joint_velocities   Vector or joint velocities. If not provided (=0), joint velocities are not filled
-  *
-  * @return 
-  */
-  virtual bool getState(vector<double> &joint_angles, vector<double> *joint_velocities=0)=0;
+
   /**
   * @brief Creates files for logging and enables log status
   *
@@ -100,5 +111,6 @@ protected:
   bool log_enable_;///< Enable Log
   ofstream command_log_file_;///< Command Log file
   ofstream feedback_log_file_;///< Feedback of actual angles log file
+  ArmSensorData sensor_data_;///< Arm feedback
 };
 #endif

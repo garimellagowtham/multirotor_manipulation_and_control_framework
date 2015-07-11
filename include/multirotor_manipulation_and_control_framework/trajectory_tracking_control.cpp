@@ -3,9 +3,10 @@
 
 using namespace std;
 
-TrajectoryTrackingController::TrajectoryTrackingController(): log_enable_(false)
-                                                              , so3(gcop::SO3::Instance())
-                                                              , bound_velocity_difference_(3)
+TrajectoryTrackingController::TrajectoryTrackingController(QuadcopterParser &parser): log_enable_(false)
+                                                                                            , so3(gcop::SO3::Instance())
+                                                                                            , bound_velocity_difference_(3)
+                                                                                            , parser_(parser)
 {
   //Default Gains:
   controller_gains_.kpr = 1.0;
@@ -77,7 +78,7 @@ bool TrajectoryTrackingController::setBias(const ControllerBias &controller_bias
   return true;
 }
 
-bool TrajectoryTrackingController::setCtrl(QuadcopterParser::ControlCommand &result_command, const gcop::Body3dState &filtered_state)
+bool TrajectoryTrackingController::setCtrl(const gcop::Body3dState &filtered_state)
 {
   Eigen::Vector3d rpy_orientation;//Orientation of quadcopter
   Eigen::Vector3d dx, ddx;// Errors in position controller
@@ -130,6 +131,7 @@ bool TrajectoryTrackingController::setCtrl(QuadcopterParser::ControlCommand &res
   so3.g2q(desired_rpy, desired_orientation);
 
   //set throttle: //#TODO: Check This is kind of fishy
+  QuadcopterParser::ControlCommand result_command;
   result_command.command_thrust = desired_vector_to_goal.dot(Eigen::Vector3d(0,0,1.0));
   result_command.command_thrust = -controller_bias_.force_bias[2] + bind(result_command.command_thrust + controller_bias_.force_bias[2], controller_command_bound_.command_thrust);
 
@@ -140,6 +142,9 @@ bool TrajectoryTrackingController::setCtrl(QuadcopterParser::ControlCommand &res
   //set roll and pitch command:
   result_command.command_roll = bind(desired_rpy[0], controller_command_bound_.command_roll);
   result_command.command_pitch = bind(desired_rpy[1], controller_command_bound_.command_pitch);
+
+  //Send the command to parser:
+  parser_.command(result_command);
 
   return true;
 }

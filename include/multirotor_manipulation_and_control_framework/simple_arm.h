@@ -22,6 +22,9 @@
 #include "arm_parser.h"
 #include "dynamixelsdk/dynamixel.h"
 #include <gcop/se3.h>
+#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
+
 
 // Control table address
 #define P_GOAL_POSITION_L	30
@@ -73,10 +76,20 @@ public:
   * @param baudrate      Baudrate of device by default is 57600
   */
   SimpleArm(int deviceIndex, uint16_t baudrate = 57600);
+
+  /**
+  * @brief Destructor Closes the feedback thread and closes serial port
+  */
+  ~SimpleArm()
+  {
+    thread_close = true;//Signal to close the thread
+    receive_thread_.join();//Wait for the other thread to join
+    dxl_terminate();//Close serial port
+    return;
+  }
   virtual bool setAngles(const vector<double> &joint_angles, const vector<double> *joint_velocities=0);
   virtual bool setEndEffectorPose(const Eigen::Matrix4d &end_effector_pose);
   virtual bool powerMotors(bool state);
-  virtual bool getState(vector<double> &joint_angles, vector<double> *joint_velocities=0);
   virtual void enableLog(string log_directory);
   virtual bool grip(double value);
 protected:
@@ -167,6 +180,11 @@ protected:
   */
   double inverseKinematics(const Eigen::Matrix4d &end_effector_pose, vector<vector<double> > &joint_angles);
 
+  /**
+  * @brief Thread to receive feedback from the arm. Currently runs at 20Hz will test higher frequencies in future
+  */
+  void serialReceiveThread();
+
 protected:
   uint16_t arm_id_[NOFJOINTS];///< Ids of Dynamixels to talk to
   uint16_t arm_max_angles_[NOFJOINTS];///< Maximum joint angles
@@ -176,6 +194,9 @@ protected:
   uint16_t arm_max_angle_velocities_[NOFJOINTS];///< Max angular velocites
   double l1, l2, x1;//Physical lengths of the links and offset between link1 and link2
   gcop::SE3 &se3;///< SE3 Instance
+  boost::thread receive_thread_;///< Thread to receive arm feedback
+  boost::mutex serial_mutex;///< Mutex to lock serial between receive and send threads
+  bool thread_close;///< Used to close the serial thread
 };
 
 #endif // SIMPLE_ARM_H
