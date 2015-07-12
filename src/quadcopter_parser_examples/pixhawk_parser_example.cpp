@@ -1,5 +1,5 @@
 #include <ros/ros.h>
-#include <multirotor_manipulation_and_control_framework/pixhawk_parser.h>
+#include <quadcopter_parsers/pixhawk_parser.h>
 
 using namespace std;
 

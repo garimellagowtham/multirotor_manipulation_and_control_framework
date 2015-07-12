@@ -102,22 +102,6 @@ set(multirotor_client_INCLUDE_DIRS
     ${QWT_INCLUDE_DIRS}
    )
 
-###################################
-## catkin specific configuration ##
-###################################
-## The catkin_package macro generates cmake config files for your package
-## Declare things to be passed to dependent projects
-## INCLUDE_DIRS: uncomment this if you package contains header files
-## LIBRARIES: libraries you create in this project that dependent projects also need
-## CATKIN_DEPENDS: catkin_packages dependent projects also need
-## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-  INCLUDE_DIRS include  ${multirotor_client_INCLUDE_DIRS}
-  LIBRARIES multirotor_manipulation_and_control_framework multirotorclientgui
-  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
-  DEPENDS system_lib
-)
-
 ###########
 ## Build ##
 ###########
@@ -125,7 +109,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  include
+  include/${PROJECT_NAME}
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${GCOP_INCLUDE_DIRS}
@@ -136,26 +120,13 @@ include_directories(
   ${multirotor_client_INCLUDE_DIRS}
 )
 
-#set(USB2AX ON)
-
-if(USB2AX)
-   set(DXL_HAL_SRC include/multirotor_manipulation_and_control_framework/dynamixelsdk/dxl_hal_usb2ax.C)
- else(USB2AX)
-   set(DXL_HAL_SRC include/multirotor_manipulation_and_control_framework/dynamixelsdk/dxl_hal_usb2dynamixel.C)
- endif(USB2AX)
-
 
 ## Declare a cpp library
- add_library(${PROJECT_NAME}
-   include/multirotor_manipulation_and_control_framework/trajectory_tracking_control.cpp
-   include/multirotor_manipulation_and_control_framework/point3d_estimator.cpp
-   include/multirotor_manipulation_and_control_framework/simple_arm.cpp
-   include/multirotor_manipulation_and_control_framework/generic_arm.cpp
-   include/multirotor_manipulation_and_control_framework/dynamixelsdk/dynamixel.C
-   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp
-
-   ${DXL_HAL_SRC}
- )
+ add_subdirectory(include/multirotor_manipulation_and_control_framework)
+ get_directory_property(PROJECT_LIBS
+                       DIRECTORY  include/multirotor_manipulation_and_control_framework
+                       DEFINITION PROJECT_LIBS)
+ message("PROJECT LIBRARIES: ${PROJECT_LIBS}") 
 
 ## Plugin for QT
   qt4_wrap_cpp(multirotor_client_gui_MOCS src/qt_gui_files/multirotor_client_gui.h)
@@ -165,7 +136,7 @@ if(USB2AX)
 
 ## Specify dependencies for the library:
   target_link_libraries(multirotorclientgui ${catkin_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QWT_LIBRARIES})
-  target_link_libraries(${PROJECT_NAME} ${GCOP_LIBRARIES} ${TINYXML_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
+  #target_link_libraries(${PROJECT_LIBS} ${GCOP_LIBRARIES} ${TINYXML_LIBRARIES} ${catkin_LIBRARIES} ${Boost_LIBRARIES})
 
 ## Hide symbols for qt gui
   find_package(class_loader)
@@ -185,20 +156,53 @@ endif (ENABLE_PIXHAWK)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(simple_arm_example
-   ${PROJECT_NAME}
+   ${PROJECT_LIBS}
+   ${GCOP_LIBRARIES}
+   ${TINYXML_LIBRARIES}
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
  )
 
  target_link_libraries(cyton_arm_example
-   ${PROJECT_NAME}
+   ${PROJECT_LIBS}
+   ${GCOP_LIBRARIES}
+   ${TINYXML_LIBRARIES}
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
  )
 
  target_link_libraries(cyton_arm_example
-   ${PROJECT_NAME}
+   ${PROJECT_LIBS}
+   ${GCOP_LIBRARIES}
+   ${TINYXML_LIBRARIES}
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
  )
 
  target_link_libraries(pixhawk_parser_example
- ${PROJECT_NAME}
- )
+   ${PROJECT_LIBS}
+   ${GCOP_LIBRARIES}
+   ${TINYXML_LIBRARIES}
+   ${catkin_LIBRARIES}
+   ${Boost_LIBRARIES}
+)
+
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS include/${PROJECT_NAME} ${multirotor_client_INCLUDE_DIRS}
+  LIBRARIES ${PROJECT_LIBS} multirotorclientgui
+  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
+  DEPENDS system_lib
+)
+
 #############
 ## Install ##
 #############

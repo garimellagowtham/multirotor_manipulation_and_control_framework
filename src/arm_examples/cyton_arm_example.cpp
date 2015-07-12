@@ -1,6 +1,6 @@
 #include <iostream>
 #include <ros/ros.h>
-#include <multirotor_manipulation_and_control_framework/generic_arm.h>
+#include <arm_parsers/generic_arm.h>
 
 using namespace std;
 

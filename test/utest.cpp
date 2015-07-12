@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <math.h>
 
-#include <multirotor_manipulation_and_control_framework/utils.h>
+#include <utils/utils.h>
 
 TEST(UtilTestSuite, checkMaxEqualMin)
 {

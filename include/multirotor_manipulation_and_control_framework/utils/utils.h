@@ -20,6 +20,8 @@
 #define COMMON_H
 #include <sys/time.h>
 #include <string>
+#include <assert.h>
+#include <math.h>
 
 /**
 * @brief This file provides common mapping functions and any small math functions needed for the UI and parser. This is done to keep the libraries independent of small libraries that need to be used 

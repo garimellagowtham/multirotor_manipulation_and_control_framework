@@ -10,15 +10,17 @@ case $key in
   then
     PACKAGES="$PACKAGES libmavconn mavlink" #Add libraries to package list
     INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
-    LIB_SRCS="$LIB_SRCS   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp\n" #Add library sources
     SETUP_VARS="$SETUP_VARS\nSET(ENABLE_PIXHAWK ON)"
   fi
   if [ "$2" == "ardrone" ]  
   then
     PACKAGES="$PACKAGES ardrone_autonomy" #Add libraries to package list
     #INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
-    #LIB_SRCS="$LIB_SRCS   include/multirotor_manipulation_and_control_framework/pixhawk_parser.cpp\n" #Add library sources
     SETUP_VARS="$SETUP_VARS\nSET(ENABLE_ARDRONE ON)"
+  fi
+  if [ "$2" == "usb2ax" ]  
+  then
+    SETUP_VARS="$SETUP_VARS\nSET(USB2AX ON)"
   fi
   shift # past argument
   ;;
@@ -42,9 +44,7 @@ do
   RUN_DEPENDENCIES_STRING="$RUN_DEPENDENCIES_STRING<run_depend>$package</run_depend>\n  "
 done 
 
-echo $PACKAGE_LIST
-echo $INCLUDES
-echo $LIB_SRCS
+echo $PACKAGE_LIST echo $INCLUDES
 echo $BUILD_DEPENDENCIES_STRING
 echo $RUN_DEPENDENCIES_STRING
 
@@ -53,9 +53,8 @@ cp CMakeLists.txt CMakeLists.txt.bak #Make a backup
 cp CMakeLists.txt.in CMakeLists.txt.temp
 sed "s|#PACKAGE_CONFIG#|$PACKAGE_LIST|" >CMakeLists.txt.temp1 <CMakeLists.txt.temp
 sed "s|#INCLUDE_CONFIG#|$INCLUDES|" >CMakeLists.txt.temp <CMakeLists.txt.temp1
-sed "s|#LIB_CONFIG#|$LIB_SRCS|" >CMakeLists.txt.temp1  <CMakeLists.txt.temp
-sed "s|#SETUP_CONFIG#|$SETUP_VARS|" >CMakeLists.txt.temp  <CMakeLists.txt.temp1
-mv CMakeLists.txt.temp CMakeLists.txt
+sed "s|#SETUP_CONFIG#|$SETUP_VARS|" >CMakeLists.txt.temp1  <CMakeLists.txt.temp
+mv CMakeLists.txt.temp1 CMakeLists.txt
 rm CMakeLists.txt.temp*
 
 cp package.xml package.xml.bak

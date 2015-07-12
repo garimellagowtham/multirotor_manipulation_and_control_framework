@@ -21,7 +21,6 @@
 
 #include"quadcopter_parser.h"
 #include <mavconn/interface.h>
-#include "utils.h"
 
 using namespace mavconn;
 

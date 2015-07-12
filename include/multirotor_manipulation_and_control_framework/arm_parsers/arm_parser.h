@@ -22,7 +22,7 @@
 #include <fstream>
 #include <vector>
 #include <Eigen/Dense>
-#include "utils.h"
+#include <utils/utils.h>
 #include <boost/signal.hpp>
 
 using namespace std;
