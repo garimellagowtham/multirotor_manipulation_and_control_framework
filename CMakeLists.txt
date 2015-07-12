@@ -110,6 +110,7 @@ set(multirotor_client_INCLUDE_DIRS
 ## Your package locations should be listed before other locations
 include_directories(
   include/${PROJECT_NAME}
+  include/${PROJECT_NAME}/extern
   ${catkin_INCLUDE_DIRS}
   ${EIGEN3_INCLUDE_DIR}
   ${GCOP_INCLUDE_DIRS}
@@ -197,7 +198,7 @@ endif (ENABLE_PIXHAWK)
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include/${PROJECT_NAME} ${multirotor_client_INCLUDE_DIRS}
+  INCLUDE_DIRS include/${PROJECT_NAME} include/${PROJECT_NAME}/extern ${multirotor_client_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_LIBS} multirotorclientgui
   CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
   DEPENDS system_lib

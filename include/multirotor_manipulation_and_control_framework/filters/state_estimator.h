@@ -24,7 +24,7 @@
 #include <gcop/body3d.h>
 #include <Eigen/Dense>
 #include <iostream>
-#include "quadcopter_parser.h"
+#include <quadcopter_parsers/quadcopter_parser.h>
 
 using namespace std;
 

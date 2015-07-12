@@ -20,7 +20,7 @@
 #define TRAJECTORYTRACKINGCONTROLLER_H
 
 #include "tf/transform_datatypes.h"
-#include "quadcopter_parser.h"
+#include <quadcopter_parsers/quadcopter_parser.h>
 #include "fstream"
 #include "iostream"
 #include <gcop/se3.h>
