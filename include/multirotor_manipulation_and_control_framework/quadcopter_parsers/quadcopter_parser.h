@@ -32,6 +32,8 @@
 
 #include <boost/signal.hpp>
 
+#include <stdexcept>
+
 using namespace std;
 
 /**
@@ -99,7 +101,6 @@ public:
 public:
   double mass;///< Mass of the Quadcopter
   geometry_msgs::Vector3 body_dimensions;///< body dimensions of quadcopter along principal axis assuming its a box
-  bool open_error;///< Error while opening the hardware
   const SensorData &sensor_data;///< Sensor data for reading purposes only Cannot write to it
   boost::signal<void (const SensorData &, uint16_t mask)> signal_sensor_update_;///< sensor data updated signal can be used to trigger callbacks etc
 
@@ -108,7 +109,7 @@ public:
   * @brief Constructor
   *
   */
-  QuadcopterParser():log_enable_(false), mass(1.0), open_error(false), sensor_data(sensor_data_){
+  QuadcopterParser():log_enable_(false), mass(1.0), sensor_data(sensor_data_){
     body_dimensions.x = 1.0;//Default values for body dimensions
     body_dimensions.y = 1.0;
     body_dimensions.z = 1.0;

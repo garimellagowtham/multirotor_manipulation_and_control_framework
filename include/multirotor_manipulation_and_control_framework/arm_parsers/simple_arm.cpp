@@ -20,7 +20,8 @@ SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser()
   if( dxl_initialize(deviceIndex, baudnum) == 0 )
   {
     printf( "Failed to open USB2Dynamixel!\n" );
-    return;
+    std::string error = "Wrong Device id or baudrate: "+boost::to_string(deviceIndex) + ":"+boost::to_string(baudrate);
+    throw(std::invalid_argument(error));
   }
   else
   {

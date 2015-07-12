@@ -38,9 +38,14 @@ int main(int argc, char **argv)
   ROS_INFO("URL: %s",url.c_str());
 
   //Create the pixhawk parser to receive and send quadcopter commands
-  parser_instance_.reset(new PixhawkParser(url));
+  try{
+    parser_instance_.reset(new PixhawkParser(url));
+  }
+  catch (const std::invalid_argument& ia) {
+    std::cerr << "Invalid argument: " << ia.what() << '\n';
+    return -1;
+  }
   parser_instance_->printSensorData();
-  assert(!parser_instance_->open_error);//Check there is no opening error
 
   //Connect Boost signal to receive and print sensor data
   parser_instance_->signal_sensor_update_.connect(receiveSensorData);//Connect the signal to receive function

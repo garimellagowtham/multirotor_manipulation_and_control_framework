@@ -16,7 +16,7 @@
 * 
 */
 #ifndef ARM_PARSER_H
-#define ARM_PARsER_H
+#define ARM_PARSER_H
 
 #include <iostream>
 #include <fstream>
@@ -24,6 +24,7 @@
 #include <Eigen/Dense>
 #include <utils/utils.h>
 #include <boost/signal.hpp>
+#include <stdexcept>
 
 using namespace std;
 

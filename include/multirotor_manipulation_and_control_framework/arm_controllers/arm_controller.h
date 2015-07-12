@@ -20,7 +20,7 @@
 
 #include <iostream>
 #include <Eigen/Dense>
-#include "arm_parser.h"
+#include <arm_parsers/arm_parser.h>
 #include <gcop/se3.h>
 
 using namespace std;
@@ -36,8 +36,9 @@ public:
     *
     * @param parser   Parser instance used for sending commands to arm from controller
     */
-    ArmController(ArmParser &parser): cam_armbase_transform_(Eigen::Matrix4d::Identity())
-                                      ,object_offset_transform_(Eigen::Matrix4d::Identity())
+    ArmController(ArmParser &parser): armbase_cam_transform_(Eigen::Matrix4d::Identity())
+                                      , object_offset_transform_(Eigen::Matrix4d::Identity())
+                                      , parser_(parser)
 
     {
     }

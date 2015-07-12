@@ -16,8 +16,7 @@ PixhawkParser::PixhawkParser(std::string url): QuadcopterParser()
   catch (mavconn::DeviceError &ex) {
       cerr<<"GCS: "<<ex.what()<<endl;
       this->sensor_data_.quadstate = "ERROR";
-      open_error = true;
-      return;
+      throw(std::invalid_argument("Invalid URL"));
   }
 
   //Initialize RC IDs        and RC Trims:

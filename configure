@@ -10,13 +10,13 @@ case $key in
   then
     PACKAGES="$PACKAGES libmavconn mavlink" #Add libraries to package list
     INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
-    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_PIXHAWK ON)"
+    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_PIXHAWK ON)\nADD_DEFINITIONS(-DENABLE_PIXHAWK)"
   fi
   if [ "$2" == "ardrone" ]  
   then
     PACKAGES="$PACKAGES ardrone_autonomy" #Add libraries to package list
     #INCLUDES="$INCLUDES  \${mavlink_INCLUDE_DIRS}\n" #Add Includes
-    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_ARDRONE ON)"
+    SETUP_VARS="$SETUP_VARS\nSET(ENABLE_ARDRONE ON)\nADD_DEFINITIONS(-DENABLE_ARDRONE)"
   fi
   if [ "$2" == "usb2ax" ]  
   then

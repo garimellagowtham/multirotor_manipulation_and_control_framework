@@ -34,6 +34,7 @@ find_package(Qwt REQUIRED)
 ## Setup Variables for use by binaries etc:
 
 SET(ENABLE_PIXHAWK ON)
+ADD_DEFINITIONS(-DENABLE_PIXHAWK)
 
 if(ENABLE_PIXHAWK)
   include(EnableCXX11)
@@ -134,6 +135,7 @@ include_directories(
   qt4_wrap_ui(multirotor_client_gui_UIS_H src/qt_gui_files/multirotor_client_widget.ui)
 
   add_library(multirotorclientgui src/qt_gui_files/multirotor_client_gui.cpp ${multirotor_client_gui_MOCS} ${multirotor_client_gui_UIS_H})
+  add_library(${PROJECT_NAME}_onboardnodehandler src/onboard_node/onboard_nodehandler.cpp)
 
 ## Specify dependencies for the library:
   target_link_libraries(multirotorclientgui ${catkin_LIBRARIES} ${QT_QTCORE_LIBRARY} ${QT_QTGUI_LIBRARY} ${QWT_LIBRARIES})
