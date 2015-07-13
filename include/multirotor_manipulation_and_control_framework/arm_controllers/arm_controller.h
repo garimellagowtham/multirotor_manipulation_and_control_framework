@@ -31,6 +31,13 @@ using namespace std;
 class ArmController
 {
 public:
+  enum State{
+    Enabled,///< Controller enabled
+    DISABLED,///< Controller disabled
+    CRITICAL///< Controller critical
+  };
+  State state;///< Current State of Arm Controller
+public:
     /**
     * @brief Constructor
     *

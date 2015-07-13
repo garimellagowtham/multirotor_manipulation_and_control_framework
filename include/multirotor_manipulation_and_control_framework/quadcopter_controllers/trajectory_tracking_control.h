@@ -51,7 +51,13 @@ public:
     Eigen::Vector3d force_bias;///< Force bias in x, y, z directions
     double rateyaw_bias;///<Torque due to mismatch of motor velocities
   };
-
+  enum State{
+          DISABLED,///< Controller disabled
+          CRITICAL,///< Controller critical
+          BOUNDS///< Controller Hit Bounds
+        };
+public:
+  State state;///< Current Position Controller State
 protected:
   gcop::Body3dState goal_state_;///< Desired goal state
   Eigen::Vector3d goal_rpy_orientation_;///< Desired orientation computed from goal state

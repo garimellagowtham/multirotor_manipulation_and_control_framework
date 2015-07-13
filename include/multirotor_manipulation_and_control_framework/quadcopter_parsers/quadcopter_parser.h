@@ -58,13 +58,13 @@ public:
     *  To know what part of data is received, look at the mask in the triggered function:
     *  The mask is created with each bit representing different data types
     *  mask[0]: battery_volts, quadstate, timestamp, armed
-    *  mask[1]: rpydata
-    *  mask[2]: magdata
-    *  mask[3]: pressure, temperature, altitude
-    *  mask[4]: wind_speed, wind_angle
-    *  mask[6]: motorpwm
-    *  mask[7]: linvel, linacc
-    *  mask[8]: gps_raw
+    *  mask[1]: rpydata, magdata
+    *  mask[2]: pressure, temperature, altitude
+    *  mask[3]: wind_speed, wind_angle
+    *  mask[4]: motorpwm
+    *  mask[5]: linacc, angvel
+    *  mask[6]: gps_raw
+    *  mask[7]: linvel
     *
     *  Only the bits which are updated in the signal are set to 1
     */
@@ -79,10 +79,11 @@ public:
     double  wind_angle;///< wind angle (degrees)
     double altitude; ///< estimated altitude
     double motorpwm[8];///< motorpwm values not all of them may be used
-    geometry_msgs::Vector3 linvel;///< Linear velocity of quadcopter
-    geometry_msgs::Vector3 linacc;///< Linear acceleration of quadcopter
+    geometry_msgs::Vector3 linvel;///< Linear velocity of quadcopter from optical flow
+    geometry_msgs::Vector3 linacc;///< Linear acceleration of quadcopter from acc
+    geometry_msgs::Vector3 angvel;///< Body Angular velocity of quadcopter from gyro
     long gps_raw[3];///< GPS Position in Latitude, Longitude and Altitude
-    double timestamp;///< timestamp from drone
+    double timestamp;///< timestamp in seconds from drone
     bool armed;///< Whether the quadcopter is ready to fly or not
     SensorData(): battery_volts(0)
     ,quadstate("NONE")

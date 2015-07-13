@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   std_msgs
   geometry_msgs
+  message_generation
   libmavconn
   mavlink
 
@@ -71,11 +72,16 @@ endif(ENABLE_PIXHAWK)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
+ add_message_files(
+   FILES
+   multirotor_manipulator_state.msg
+   multirotor_quad_state.msg
+   MotorPwm.msg
+   WindSpeed.msg
+   Barometer.msg
+   multirotor_manipulator_commands.msg
 #   Message2.msg
-# )
+ )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -92,10 +98,10 @@ endif(ENABLE_PIXHAWK)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   sensor_msgs#   std_msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   sensor_msgs   std_msgs
+ )
 
 ## Set Include Dirs for Multirotor Client GUI:
 set(multirotor_client_INCLUDE_DIRS 
@@ -155,7 +161,8 @@ endif (ENABLE_PIXHAWK)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
-# add_dependencies(multirotor_manipulation_and_control_framework_node multirotor_manipulation_and_control_framework_generate_messages_cpp)
+ add_dependencies(${PROJECT_NAME}_onboardnodehandler multirotor_manipulation_and_control_framework_generate_messages_cpp)
+ add_dependencies(multirotorclientgui multirotor_manipulation_and_control_framework_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(simple_arm_example
@@ -202,7 +209,7 @@ endif (ENABLE_PIXHAWK)
 catkin_package(
   INCLUDE_DIRS include/${PROJECT_NAME} include/${PROJECT_NAME}/extern ${multirotor_client_INCLUDE_DIRS}
   LIBRARIES ${PROJECT_LIBS} multirotorclientgui
-  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs
+  CATKIN_DEPENDS roscpp rospy rqt_gui rqt_gui_cpp sensor_msgs std_msgs message_runtime
   DEPENDS system_lib
 )
 

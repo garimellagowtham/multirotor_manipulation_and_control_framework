@@ -1,4 +1,4 @@
-/* Copyright (C) 
+/* Copyright (C)
 * 2015 - Gowtham Garimella
 * This program is free software; you can redistribute it and/or
 * modify it under the terms of the GNU General Public License
@@ -29,6 +29,19 @@
 
 #include <quadcopter_controllers/trajectory_tracking_control.h>
 
+#include <sensor_msgs/Imu.h>
+#include <sensor_msgs/NavSatFix.h>
+
+#include <multirotor_manipulation_and_control_framework/multirotor_manipulator_state.h>
+#include <multirotor_manipulation_and_control_framework/multirotor_manipulator_commands.h>
+#include <multirotor_manipulation_and_control_framework/multirotor_quad_state.h>
+#include <multirotor_manipulation_and_control_framework/WindSpeed.h>
+#include <multirotor_manipulation_and_control_framework/MotorPwm.h>
+#include <multirotor_manipulation_and_control_framework/Barometer.h>
+
+using namespace std;
+using namespace multirotor_manipulation_and_control_framework;
+
 /**
 * @brief This class provides state machine to combine different components:
 * > Arm Controller
@@ -42,12 +55,63 @@ class OnboardNodeHandler
 public:
     OnboardNodeHandler(ros::NodeHandle &nh);
 protected:
+    void quadDataHandler(const QuadcopterParser::SensorData &sensor_data, uint16_t mask);
+    void armDataHandler(const ArmParser::ArmSensorData &sensor_data);
+    void guiMsgHandler(const multirotor_manipulator_commands::ConstPtr &gui_command);
+protected:
+    class QuadcopterControlHandler
+    {
+      public:
+        enum State{
+          Enabled,///< Controller enabled
+          DISABLED,///< Controller disabled
+          CRITICAL///< Controller critical
+        };
+        State state;///< Current State
+      public:
+        QuadcopterControlHandler(OnboardNodeHandler &node_handler);
+      protected:
+        bool preChecks();
+        void quadDataHandler(const QuadcopterParser::SensorData &sensor_data, uint16_t mask);
+      protected:
+        OnboardNodeHandler &node_handler_;///< Parent Class to access other states
+
+    };
+    class ArmControlHandler
+    {
+      public:
+        enum State{
+          ENABLED,///< Controller enabled
+          DISABLED,///< Controller disabled
+          CRITICAL///< Controller critical
+        };
+        State state;///< Current State
+      public:
+        ArmControlHandler(OnboardNodeHandler &node_handler);
+      protected:
+        bool preChecks();
+        void armDataHandler(const ArmParser::ArmSensorData &sensor_data);
+      protected:
+        OnboardNodeHandler &node_handler_;///< Parent Class to access other states
+    };
+protected:
     ros::NodeHandle nh_;///< Internal nodehandle to publish and subscribe
+    QuadcopterControlHandler quad_handler_;///< State Machine for Quadcopter Control
+    ArmControlHandler arm_handler_;///< StateMachine for Arm Control
     boost::shared_ptr<ArmParser> arm_parser_;///< Parser to talk to the manipulator
     boost::shared_ptr<QuadcopterParser> quad_parser_;///< Parser to talk to the quadcopter
     boost::shared_ptr<StateEstimator> state_estimator_;///< Estimator to get the state of the quadcopter
     boost::shared_ptr<TrajectoryTrackingController> quad_controller_;///< Controller to track trajectories
     boost::shared_ptr<ArmController> arm_controller_;///< Controller to grab objects
+    ros::Publisher quad_state_publisher;///< Publish Quadcopter State
+    ros::Publisher arm_state_publisher;///< Publish arm state
+    ros::Publisher barometer_publisher;///< Publish Pressure, temperature and Altitude
+    ros::Publisher motorpwm_publisher;///< Publishes output motor pwm
+    ros::Publisher imu_publisher;///< Publishes raw imu
+    ros::Publisher rpy_publisher;///< Publishes the quadcopter orientation from AHRS
+    ros::Publisher gps_publisher;///< Publishes the gps data
+    ros::Publisher linvel_publisher;///< Publishes the linear velocity from optical flow
+    ros::Publisher windspeed_publisher;///< Publish windspeed and angle
 };
 
 #endif // ONBOARD_NODEHANDLER_H

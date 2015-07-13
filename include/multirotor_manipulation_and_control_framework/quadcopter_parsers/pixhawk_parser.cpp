@@ -256,6 +256,9 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
     sensor_data_.linacc.x = rawimu_val.xacc;
     sensor_data_.linacc.y = rawimu_val.yacc;
     sensor_data_.linacc.z = rawimu_val.zacc;
+    sensor_data_.angvel.x = rawimu_val.xgyro;
+    sensor_data_.angvel.y = rawimu_val.ygyro;
+    sensor_data_.angvel.z = rawimu_val.zgyro;
 
     //Trigger signal:
     mask = 1<<7;
