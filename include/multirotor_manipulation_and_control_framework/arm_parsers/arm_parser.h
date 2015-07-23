@@ -40,12 +40,29 @@ public:
   struct ArmSensorData{
     std::vector<double> joint_angles_;///< Feedback Joint Angles
     std::vector<double> joint_velocities_;///< Feedback Joint Velocities
+    std::string arm_state;///< State of the arm
+    double timestamp;///< Time when joint angles and velocities are received
+    ArmSensorData(): arm_state("NONE")
+                    , timestamp(0)
+    {
+    }
   };
+
+  enum State{
+      ENABLED=0,///< Enabled
+      DISABLED=1,///< Disabled
+      CRITICAL=2///< Critical
+    };
 public:
+  const State &state;///< Basic state used in statemachine 0: ENABLED, 1: DISABLED, 2: CRITICAL
   const ArmSensorData &sensor_data;///< Arm feedback data for reading
   boost::signal<void (const ArmSensorData&)> signal_feedback_received_;///< Signal that arm feedback has been updated
+  boost::signal<void (const uint8_t &, int id)> signal_state_update_;///< state updated
 public:
-  ArmParser(): log_enable_(false), sensor_data(sensor_data_)
+  ArmParser(): log_enable_(false)
+               , sensor_data(sensor_data_)
+               , state(state_)
+               , state_(DISABLED)
   {
   }
 
@@ -73,7 +90,7 @@ public:
   */
   virtual bool setEndEffectorPose(const Eigen::Matrix4d &end_effector_pose)=0;
   /**
-  * @brief Powers Motors on an arm on/off
+  * @brief Powers Motors on an arm on/off and resets the arm
   *
   * @param state Input to switch the motors on(true)/off(false)
   *
@@ -113,5 +130,6 @@ protected:
   ofstream command_log_file_;///< Command Log file
   ofstream feedback_log_file_;///< Feedback of actual angles log file
   ArmSensorData sensor_data_;///< Arm feedback
+  State state_;///< State
 };
 #endif

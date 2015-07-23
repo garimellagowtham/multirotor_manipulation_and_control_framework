@@ -99,18 +99,31 @@ public:
     }
   };
 
+  enum State{
+    ENABLED=0,///< Armed and Enabled
+    DISABLED=1,///< Disarmed and Disabled
+    CRITICAL=2///< Crash or some emergency
+  };
+
 public:
   double mass;///< Mass of the Quadcopter
   geometry_msgs::Vector3 body_dimensions;///< body dimensions of quadcopter along principal axis assuming its a box
   const SensorData &sensor_data;///< Sensor data for reading purposes only Cannot write to it
   boost::signal<void (const SensorData &, uint16_t mask)> signal_sensor_update_;///< sensor data updated signal can be used to trigger callbacks etc
+  boost::signal<void (const uint8_t &, int id)> signal_state_update_;///< state updated id to find who generated signal
+  const State &state;///< Basic state used in statemachine 0: ENABLED, 1: DISABLED, 2: CRITICAL
 
 public: 
   /**
   * @brief Constructor
   *
   */
-  QuadcopterParser():log_enable_(false), mass(1.0), sensor_data(sensor_data_){
+  QuadcopterParser():log_enable_(false)
+                     , mass(1.0)
+                     , sensor_data(sensor_data_)
+                     , state(state_)
+                     , state_(DISABLED)
+  {
     body_dimensions.x = 1.0;//Default values for body dimensions
     body_dimensions.y = 1.0;
     body_dimensions.z = 1.0;
@@ -224,6 +237,7 @@ protected:
   ofstream servo_file_;//Raw servo pwm log file
   ofstream imu_file_;//Imu data log file
   bool log_enable_;///< Enable/Disable logging
+  State state_;///< Personal reference to state
 };
 #endif //QuadcopterParser_H
 

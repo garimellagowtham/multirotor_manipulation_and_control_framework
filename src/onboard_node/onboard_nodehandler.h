@@ -31,6 +31,7 @@
 
 #include <sensor_msgs/Imu.h>
 #include <sensor_msgs/NavSatFix.h>
+#include <sensor_msgs/JointState.h>
 
 #include <multirotor_manipulation_and_control_framework/multirotor_manipulator_state.h>
 #include <multirotor_manipulation_and_control_framework/multirotor_manipulator_commands.h>
@@ -38,6 +39,9 @@
 #include <multirotor_manipulation_and_control_framework/WindSpeed.h>
 #include <multirotor_manipulation_and_control_framework/MotorPwm.h>
 #include <multirotor_manipulation_and_control_framework/Barometer.h>
+#include <multirotor_manipulation_and_control_framework/BodyState.h>
+#include <multirotor_manipulation_and_control_framework/QuadControllerGains.h>
+
 
 using namespace std;
 using namespace multirotor_manipulation_and_control_framework;
@@ -52,57 +56,42 @@ using namespace multirotor_manipulation_and_control_framework;
 */
 class OnboardNodeHandler
 {
+
+typedef Eigen::Matrix<double, 7, 1> Vector7d;
+
 public:
     OnboardNodeHandler(ros::NodeHandle &nh);
 protected:
     void quadDataHandler(const QuadcopterParser::SensorData &sensor_data, uint16_t mask);
     void armDataHandler(const ArmParser::ArmSensorData &sensor_data);
     void guiMsgHandler(const multirotor_manipulator_commands::ConstPtr &gui_command);
-protected:
-    class QuadcopterControlHandler
-    {
-      public:
-        enum State{
-          Enabled,///< Controller enabled
-          DISABLED,///< Controller disabled
-          CRITICAL///< Controller critical
-        };
-        State state;///< Current State
-      public:
-        QuadcopterControlHandler(OnboardNodeHandler &node_handler);
-      protected:
-        bool preChecks();
-        void quadDataHandler(const QuadcopterParser::SensorData &sensor_data, uint16_t mask);
-      protected:
-        OnboardNodeHandler &node_handler_;///< Parent Class to access other states
+    void stateChanged(const uint8_t &state, int id);
+    void quadControlTimer(const ros::TimerEvent& event_data);
+    void markerCallback(const geometry_msgs::Pose::ConstPtr &pose);
+    void jointCallback(const sensor_msgs::JointState::ConstPtr &command_state);
+    void endeffectorCallback(const geometry_msgs::Pose::ConstPtr &pose);
+    void quadGoalCallback(const BodyState::ConstPtr &state);
+    void quadGainsCallback(const QuadControllerGains::ConstPtr &gains);
 
+protected:
+    enum State{
+      ENABLED=0,///< Enabled
+      DISABLED=1,///< Disabled
+      CRITICAL=2///< Critical
     };
-    class ArmControlHandler
+    inline bool bitcheck(uint16_t input, int shift)
     {
-      public:
-        enum State{
-          ENABLED,///< Controller enabled
-          DISABLED,///< Controller disabled
-          CRITICAL///< Controller critical
-        };
-        State state;///< Current State
-      public:
-        ArmControlHandler(OnboardNodeHandler &node_handler);
-      protected:
-        bool preChecks();
-        void armDataHandler(const ArmParser::ArmSensorData &sensor_data);
-      protected:
-        OnboardNodeHandler &node_handler_;///< Parent Class to access other states
-    };
+      return (input & (1<<shift));
+    }
 protected:
     ros::NodeHandle nh_;///< Internal nodehandle to publish and subscribe
-    QuadcopterControlHandler quad_handler_;///< State Machine for Quadcopter Control
-    ArmControlHandler arm_handler_;///< StateMachine for Arm Control
+
     boost::shared_ptr<ArmParser> arm_parser_;///< Parser to talk to the manipulator
     boost::shared_ptr<QuadcopterParser> quad_parser_;///< Parser to talk to the quadcopter
     boost::shared_ptr<StateEstimator> state_estimator_;///< Estimator to get the state of the quadcopter
     boost::shared_ptr<TrajectoryTrackingController> quad_controller_;///< Controller to track trajectories
     boost::shared_ptr<ArmController> arm_controller_;///< Controller to grab objects
+
     ros::Publisher quad_state_publisher;///< Publish Quadcopter State
     ros::Publisher arm_state_publisher;///< Publish arm state
     ros::Publisher barometer_publisher;///< Publish Pressure, temperature and Altitude
@@ -112,6 +101,28 @@ protected:
     ros::Publisher gps_publisher;///< Publishes the gps data
     ros::Publisher linvel_publisher;///< Publishes the linear velocity from optical flow
     ros::Publisher windspeed_publisher;///< Publish windspeed and angle
+
+    ros::Subscriber quad_goal_subscriber;///< Subscribe to target pose of quadcopter
+    ros::Subscriber arm_joint_subscriber;///< Subscribe to arm joint commands
+    ros::Subscriber arm_endeffector_subscriber;///< Subscribe to arm end effector commands
+    ros::Subscriber marker_subscriber;///< Subscribe to marker/object pose for arm controller
+    ros::Subscriber quad_gains_subscriber;///< Subscribe to the gains for quad controller
+
+    ros::Timer quad_control_timer_;///< Timer to control the quadcopter
+
+    State quad_controller_state_;///< State of the positioncontroller
+    State arm_controller_state_;///< State of the arm controller
+
+    /**
+      * @brief If arm state is coupled with quad state.
+      *  For eg. if quadcopter controller should not be enable unless arm
+      *  arm is powered on
+      */
+    bool check_armstate;
+
+    double control_loop_period_;///< Loop timer period in sec
+
+    gcop::SE3 &se3_;///< SE3 instance
 };
 
 #endif // ONBOARD_NODEHANDLER_H

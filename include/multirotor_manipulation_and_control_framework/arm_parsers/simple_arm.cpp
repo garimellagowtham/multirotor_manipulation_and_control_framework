@@ -21,18 +21,15 @@ SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser()
   {
     printf( "Failed to open USB2Dynamixel!\n" );
     std::string error = "Wrong Device id or baudrate: "+boost::to_string(deviceIndex) + ":"+boost::to_string(baudrate);
+    //Update the state
+    state_ = CRITICAL;
+    signal_state_update_(state, 1);//Call the signal to update all the functions which need state to be changed
+    sensor_data_.arm_state = "ERROR";
     throw(std::invalid_argument(error));
   }
   else
   {
     printf( "Succeed to open USB2Dynamixel!\n" );
-  }
-
-  //Power the motors:
-  if(!powerMotors(true))
-  {
-    printf("Cannot power motors on! \n");
-    return;
   }
 
   //Initialize arm feedback data
@@ -42,42 +39,12 @@ SimpleArm::SimpleArm(int deviceIndex, uint16_t baudrate):ArmParser()
   //Create a thread to receive feedback from arm at 20Hz:
   receive_thread_ = boost::thread(boost::bind(&SimpleArm::serialReceiveThread, this));
 
-  //Set Default Joint Angles and Velocities:
+  //Power the motors:
+  if(!powerMotors(true))
   {
-    std::vector<double> joint_angles(NOFJOINTS);
-    std::vector<double> joint_velocities(NOFJOINTS);
-    joint_angles[0] = M_PI/2; joint_angles[1] = -M_PI;//rad
-    joint_velocities[0] = 0.621; joint_velocities[1] = 0.621;//rad/s
-    //joint_velocities[0] = 0.321; joint_velocities[1] = 0.321;//rad/s
-    setAngles(joint_angles, &joint_velocities);
-
-    //Wait till the joint angles are achieved:
-    {
-      unsigned long count = 0;
-      while(count < 100)//100 x 100 ms =  10s
-      {
-        bool result = true;
-        {
-          boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
-          for(int count = 0; count < NOFJOINTS; count++)
-          {
-            //cout<<"Joint ["<<count<<"]: "<<sensor_data.joint_angles_[count]<<"\t"<<sensor_data.joint_velocities_[count]<<endl;
-            if(abs(sensor_data.joint_angles_[count] - joint_angles[count]) > 4.0*(M_PI/180.0)) //error of 4 degrees
-            {
-              result = false;
-              break;
-            }
-          }
-        }
-
-        if(result == true)
-          break;
-        usleep(100000);//Sleep microseconds
-        //cout<<count<<endl;
-        count++;
-      }
-    }
-  }
+    printf("Cannot power motors on! \n");
+    return;
+  } 
 
 }
 
@@ -155,7 +122,56 @@ bool SimpleArm::powerMotors(bool state)
     else
     {
       PrintCommStatus(CommStatus);
+      //Update the state
+      state_ = CRITICAL;
+      signal_state_update_(state_, 1);//Call the signal to update all the functions which need state to be changed
       return false;//Cannot power the motor
+    }
+    //Set Default Joint Angles and Velocities:
+    if(power_motors)
+    {
+      std::vector<double> joint_angles(NOFJOINTS);
+      std::vector<double> joint_velocities(NOFJOINTS);
+      joint_angles[0] = M_PI/2; joint_angles[1] = -M_PI;//rad
+      joint_velocities[0] = 0.621; joint_velocities[1] = 0.621;//rad/s
+      //joint_velocities[0] = 0.321; joint_velocities[1] = 0.321;//rad/s
+      setAngles(joint_angles, &joint_velocities);
+      //Change State:
+      state_ = ENABLED;
+      signal_state_update_(state_, 1);//Call the signal to update all the functions which need state to be changed
+
+      //Wait till the joint angles are achieved:
+      /*{
+        unsigned long count = 0;
+        while(count < 100)//100 x 100 ms =  10s
+        {
+          bool result = true;
+          {
+            boost::mutex::scoped_lock lock(serial_mutex);//Lock until data is copied over
+            for(int count = 0; count < NOFJOINTS; count++)
+            {
+              //cout<<"Joint ["<<count<<"]: "<<sensor_data.joint_angles_[count]<<"\t"<<sensor_data.joint_velocities_[count]<<endl;
+              if(abs(sensor_data.joint_angles_[count] - joint_angles[count]) > 4.0*(M_PI/180.0)) //error of 4 degrees
+              {
+                result = false;
+                break;
+              }
+            }
+          }
+
+          if(result == true)
+            break;
+          usleep(100000);//Sleep microseconds
+          //cout<<count<<endl;
+          count++;
+        }
+      }*/
+    }
+    else
+    {
+      //Change State:
+      state_ = DISABLED;
+      signal_state_update_(state_, 1);//Call the signal to update all the functions which need state to be changed
     }
   }
   return true;
@@ -286,7 +302,10 @@ void SimpleArm::serialReceiveThread()
         {
           //[DEBUG]
           PrintCommStatus(CommStatus);
-          //#TODO: Check number of errors and print in sensor status or close the thread
+          thread_close = true;
+          //Update the state
+          state_ = CRITICAL;
+          signal_state_update_(state_, 1);//Call the signal to update all the functions which need state to be changed
           return;
         }
 
@@ -321,6 +340,10 @@ void SimpleArm::serialReceiveThread()
         {
           //[DEBUG]
           PrintCommStatus(CommStatus);
+          thread_close = true;
+          //Update the state
+          state_ = CRITICAL;
+          signal_state_update_(state_, 1);//Call the signal to update all the functions which need state to be changed
           return;
         }
       }

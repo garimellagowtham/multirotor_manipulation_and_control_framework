@@ -56,10 +56,12 @@ protected:
     ros::Time current_time_;///< Current time of the system
     Eigen::Vector4d current_pose_;///< Quaternion of pose (w,x,y,z)
     gcop::SO3 &so3;///< Reference to SO3 instance
+    bool pose_update_;///< Store state of pose Callback
 
     //ROS stuff:
     ros::NodeHandle &nh_;///< NodeHandle passed
     ros::Subscriber mocap_sub_;///< Motion Capture subscriber
+    ros::Timer pose_timer_;///< Timer to verify posecallback is running properly
 protected:
     /**
     * @brief Callback when external pose from Motion Capture system arrives
@@ -67,6 +69,8 @@ protected:
     * @param pose     External Pose from Motion Capture system
     */
     void poseCallback(const geometry_msgs::Pose &pose);
+
+    void stateCheck(const ros::TimerEvent &event_data);
 };
 
 #endif // POINT3D_ESTIMATOR_H

@@ -11,3 +11,13 @@
 i. Add more debug and somehow use forwardkin for Arm
 ii. Add service for knowing forward kin
 iii. Test cyton arm
+
+> Add CRITICAL STUFF in QuadcopterParser
+> Add Gains subscribing
+> Add Landing command
+> Verify state machine
+> Verify overwriting with radio
+> Verify Arm stuff
+> Verify Quad with arm
+
+> Dont know how to conduct tests

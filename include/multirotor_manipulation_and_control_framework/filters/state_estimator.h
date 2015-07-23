@@ -37,12 +37,24 @@ using namespace std;
 class StateEstimator
 {
 public:
+ enum State{
+    ENABLED=0,///< Armed and Enabled
+    DISABLED=1,///< Disarmed and Disabled
+    CRITICAL=2///< Crash or some emergency
+  };
+
+public:
+  const State &state;///< Basic state used in statemachine 0: ENABLED, 1: DISABLED, 2: CRITICAL
+  boost::signal<void (const uint8_t &, int id)> signal_state_update_;///< state updated
+public:
   /**
    * Constructor creates a body3d system.
    *
    * @param body_dimensions Dimensions of the body
    */
   StateEstimator(QuadcopterParser &quad_parser): quad_parser_(quad_parser)
+                                                 , state(state_)
+                                                 , state_(DISABLED)
   {
   }
 
@@ -56,6 +68,7 @@ public:
 
 protected:
   QuadcopterParser &quad_parser_;///< Reference to the quadcopter parser to obtain sensor data
+  State state_;///< Personal modifiable reference to state
 };
 
 #endif // STATE_ESTIMATOR_H

@@ -15,7 +15,9 @@ PixhawkParser::PixhawkParser(std::string url): QuadcopterParser()
   }
   catch (mavconn::DeviceError &ex) {
       cerr<<"GCS: "<<ex.what()<<endl;
-      this->sensor_data_.quadstate = "ERROR";
+      this->sensor_data_.quadstate = "CRITICAL";
+      state_ = CRITICAL;
+      signal_state_update_(state_, 0);
       throw(std::invalid_argument("Invalid URL"));
   }
 
@@ -391,12 +393,27 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
       break;
     case MAV_STATE_CRITICAL:
       sensor_data_.quadstate = "CRITICAL ";
+      if(state_ != CRITICAL)
+      {
+        state_ = CRITICAL;//Set critical state
+        signal_state_update_(state_, 0);
+      }
       break;
     case MAV_STATE_EMERGENCY:
       sensor_data_.quadstate = "EMERGENCY ";
+      if(state_ != CRITICAL)
+      {
+        state_ = CRITICAL;//Set critical state
+        signal_state_update_(state_, 0);
+      }
       break;
     case MAV_STATE_POWEROFF:
       sensor_data_.quadstate = "POWEROFF ";
+      if(state_ != CRITICAL)
+      {
+        state_ = CRITICAL;//Set critical state
+        signal_state_update_(state_, 0);
+      }
       break;
     case MAV_STATE_ENUM_END:
       sensor_data_.quadstate = "ENUM_END ";
@@ -409,11 +426,21 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
     if(heartbeat.base_mode & MAV_MODE_FLAG_SAFETY_ARMED)
     {
       sensor_data_.quadstate +=  " ARMED";
+      if(state_ != CRITICAL || state_ != ENABLED)
+      {
+        state_ = ENABLED;//Set critical state
+        signal_state_update_(state_, 0);
+      }
       sensor_data_.armed = true;
     }
     else
     {
       sensor_data_.armed = false;
+      if(state_ != CRITICAL || state_ != DISABLED)
+      {
+        state_ = DISABLED;//Set critical state
+        signal_state_update_(state_, 0);
+      }
       sensor_data_.quadstate += " DISARMED";
     }
 

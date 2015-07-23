@@ -80,6 +80,8 @@ endif(ENABLE_PIXHAWK)
    WindSpeed.msg
    Barometer.msg
    multirotor_manipulator_commands.msg
+   BodyState.msg
+   QuadControllerGains.msg
 #   Message2.msg
  )
 
