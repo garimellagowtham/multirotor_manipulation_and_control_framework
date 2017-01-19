@@ -147,13 +147,34 @@ bool PixhawkParser::command(const ControlCommand &command)// Command the quadcop
   uint16_t rc_data[8] = {900};//All channels to min
 
   //Map the values from raw units to PWM Values
-  rc_data[0] = (uint16_t)common::map(command.command_roll,-M_PI/4, M_PI/4, RC_MIN[0],RC_MAX[0]);//ROll
+  if(command.command_roll > 0)
+  {
+    rc_data[0] = (uint16_t)common::map(command.command_roll, 0, M_PI/4, RC_TRIM[0]+1,RC_MAX[0]);//ROll
+  }
+  else
+  {
+    rc_data[0] = (uint16_t)common::map(command.command_roll,-M_PI/4, 0, RC_MIN[0],RC_TRIM[0]-1);//ROll
+  }
 
-  rc_data[1] = (uint16_t)common::map(-command.command_pitch,-M_PI/4, M_PI/4, RC_MIN[1],RC_MAX[1]);//PITCH (NWU TO NED)
+  if(command.command_pitch > 0)
+  {
+    rc_data[1] = (uint16_t)common::map(-command.command_pitch,-M_PI/4, 0, RC_MIN[1],RC_TRIM[1]-1);//PITCH (NWU TO NED)
+  }
+  else
+  {
+    rc_data[1] = (uint16_t)common::map(-command.command_pitch,0, M_PI/4, RC_TRIM[1]+1,RC_MAX[1]);//PITCH (NWU TO NED)
+  }
+
+  if(command.command_rate_yaw > 0)
+  {
+    rc_data[3]  = (uint16_t)common::map(-command.command_rate_yaw, -1,0,RC_MIN[3],RC_TRIM[3]-1);//Yaw is normalized between -1 to 1 for now as it is the rate of change and not exactly an angle to command
+  }
+  else
+  {
+    rc_data[3]  = (uint16_t)common::map(-command.command_rate_yaw, 0,1,RC_TRIM[3]+1,RC_MAX[3]);//Yaw is normalized between -1 to 1 for now as it is the rate of change and not exactly an angle to command
+  }
 
   rc_data[2] = (uint16_t)common::map(command.command_thrust, thrust_min_,thrust_max_,RC_MIN[2],RC_MAX[2]);//Thrust
-
-  rc_data[3]  = (uint16_t)common::map(-command.command_rate_yaw, -1,1,RC_MIN[3],RC_MAX[3]);//Yaw is normalized between -1 to 1 for now as it is the rate of change and not exactly an angle to command
 
   //Send Data to Quadcopter
   PixhawkParser::sendRadio(rc_data);
@@ -310,8 +331,16 @@ void PixhawkParser::receiveMavlinkMessage(const mavlink_message_t *message, uint
   case MAVLINK_MSG_ID_RC_CHANNELS_RAW:
     mavlink_rc_channels_raw_t rcmessage;
     mavlink_msg_rc_channels_raw_decode(message,&rcmessage);
-    //if(debug_enable_)
-     // printf("RAW RC input: \t R1: %u\t R2 %u \t R_3 %u\t R_4 %u\tR_5 %u\t R_6 %u \t R_7 %u\t R_8 %u \n", rcmessage.chan1_raw, rcmessage.chan2_raw, rcmessage.chan3_raw, rcmessage.chan4_raw, rcmessage.chan5_raw, rcmessage.chan6_raw, rcmessage.chan7_raw, rcmessage.chan8_raw);
+    if(debug_enable_)
+    {
+      static int count_raw = 0;
+      if(count_raw == 20)
+      {
+        count_raw = 0;
+        printf("RAW RC input: \t R1: %u\t R2 %u \t R_3 %u\t R_4 %u\tR_5 %u\t R_6 %u \t R_7 %u\t R_8 %u \n", rcmessage.chan1_raw, rcmessage.chan2_raw, rcmessage.chan3_raw, rcmessage.chan4_raw, rcmessage.chan5_raw, rcmessage.chan6_raw, rcmessage.chan7_raw, rcmessage.chan8_raw);
+      }
+      count_raw++;
+    }
     break;
   case MAVLINK_MSG_ID_SERVO_OUTPUT_RAW:
     mavlink_servo_output_raw_t servooutmessage;

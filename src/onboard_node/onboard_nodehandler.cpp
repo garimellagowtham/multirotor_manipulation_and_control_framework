@@ -393,10 +393,10 @@ void OnboardNodeHandler::quadGoalCallback(const BodyState::ConstPtr &state)
   Eigen::Vector4d quat;
   quat<< state->pose.orientation.w, state->pose.orientation.x, state->pose.orientation.y, state->pose.orientation.x
          , state->pose.orientation.y, state->pose.orientation.z;
-  se3_.so3.quat2g(goal_state.first, quat);
-  goal_state.second<<state->pose.position.x, state->pose.position.y, state->pose.position.z
-                     , state->twist.angular.x, state->twist.angular.y, state->twist.angular.z
-                     , state->twist.linear.x, state->twist.linear.y, state->twist.linear.z;
+  se3_.so3.quat2g(goal_state.R, quat);
+  goal_state.p<<state->pose.position.x, state->pose.position.y, state->pose.position.z;
+  goal_state.w<<state->twist.angular.x, state->twist.angular.y, state->twist.angular.z;
+  goal_state.v<<state->twist.linear.x, state->twist.linear.y, state->twist.linear.z;
 
   quad_controller_->setGoal(goal_state);
 }

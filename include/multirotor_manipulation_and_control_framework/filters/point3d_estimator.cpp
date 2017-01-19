@@ -30,10 +30,10 @@ void Point3DEstimator::predictState(gcop::Body3dState &state)
   kalman_predictor_.Predict(predict_point3d_state_, time_predict.toSec(), point3d_state_, u, dt);
 
   //Fill body3dState:
-  state.second.head<3>() = predict_point3d_state_.q;
-  state.second.tail<3>() = predict_point3d_state_.v;
+  state.p = predict_point3d_state_.q;
+  state.v = predict_point3d_state_.v;
   //Angular velocity is not observed here
-  so3.quat2g(state.first, current_pose_);//Fill orientation
+  so3.quat2g(state.R, current_pose_);//Fill orientation
 }
 
 void Point3DEstimator::poseCallback(const geometry_msgs::Pose &pose)

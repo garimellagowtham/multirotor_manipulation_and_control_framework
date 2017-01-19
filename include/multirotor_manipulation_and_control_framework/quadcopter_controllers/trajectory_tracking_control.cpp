@@ -16,9 +16,6 @@ TrajectoryTrackingController::TrajectoryTrackingController(QuadcopterParser &par
   controller_gains_.kpy = 0.5;
   controller_gains_.kiy = 0.001;
   controller_gains_.kit = 0.001;
-  //Default Goal State:
-  goal_state_.first.setIdentity();
-  goal_state_.second.setZero();
   //Default Bias:
   controller_bias_.force_bias = Eigen::Vector3d(0, 0, -0.5*9.81);//N
   controller_bias_.rateyaw_bias = 0.0;
@@ -39,7 +36,7 @@ void TrajectoryTrackingController::setGoal(const gcop::Body3dState &goal_state)
 {
   //#TODO: Add Prechecks like geo-fencing
   goal_state_ = goal_state;
-  so3.g2q(goal_rpy_orientation_, goal_state.first);
+  so3.g2q(goal_rpy_orientation_, goal_state.R);
 }
 void TrajectoryTrackingController::getGoal(gcop::Body3dState &goal_state)
 {
@@ -83,11 +80,11 @@ bool TrajectoryTrackingController::setCtrl(const gcop::Body3dState &filtered_sta
   Eigen::Vector3d rpy_orientation;//Orientation of quadcopter
   Eigen::Vector3d dx, ddx;// Errors in position controller
 
-  so3.g2q(rpy_orientation, filtered_state.first);//Get Orientation of quadcopter
+  so3.g2q(rpy_orientation, filtered_state.R);//Get Orientation of quadcopter
 
-  dx = goal_state_.second.head<3>() - filtered_state.second.head<3>();
+  dx = goal_state_.p - filtered_state.p;
 
-  ddx = goal_state_.second.tail<3>() - filtered_state.second.tail<3>();
+  ddx = goal_state_.v - filtered_state.v;
 
   //Check bound on difference:
   if(ddx.norm() > bound_velocity_difference_)
@@ -101,7 +98,7 @@ bool TrajectoryTrackingController::setCtrl(const gcop::Body3dState &filtered_sta
   if(integrator_enable_)
   {
     //#TODO: Find a better way of doing yaw integration
-    if(filtered_state.second[2] > 0.4)//Only start yaw integration after quad is atleast 0.4 m high from ground
+    if(filtered_state.p[2] > 0.4)//Only start yaw integration after quad is atleast 0.4 m high from ground
     {
       controller_bias_.rateyaw_bias += -controller_gains_.kiy*(rpy_orientation[2] - goal_rpy_orientation_[2]);//Integrator to avoid yaw bias in terms of motors not providing same torque for some reason
       controller_bias_.force_bias[0] -= (controller_gains_.kit/4)*dx[0];//X integration

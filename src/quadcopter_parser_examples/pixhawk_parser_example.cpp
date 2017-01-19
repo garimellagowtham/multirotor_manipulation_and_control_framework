@@ -16,8 +16,8 @@ void receiveSensorData(const QuadcopterParser::SensorData &sensor_data, uint16_t
   {
     static ros::Time t1 = ros::Time::now();//Initialize
     ros::Time t2 = ros::Time::now();
-    ROS_INFO("Time taken from previous msg: %f",(t2 - t1).toSec());
-    parser_instance_->printSensorData();//Print the data; We can also use sensor data here somehow
+    //////ROS_INFO("Time taken from previous msg: %f",(t2 - t1).toSec());
+    //////parser_instance_->printSensorData();//Print the data; We can also use sensor data here somehow
     t1 = t2;
   }
 }
